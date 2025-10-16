@@ -398,7 +398,7 @@
       {start: 8, end: 9, curve: -0.5, points: 25}  // Erzurum → Tebriz
     ];
 
-    // Kıvrımlı yol noktalarını oluştur
+    // Kıvrımlı yol noktaları
     var curvedRoutePoints = createAdvancedCurvedRoute(waypoints, curvedSegments);
     
     // Kıvrımlı yolu çiz
@@ -413,7 +413,7 @@
     // Yola tıklanabilirlik ekle
     curvedRoute.bindPopup('<strong> Kervan Yolu</strong><br>XIII-XIV. yüzyıllarda Antalya Limanından yola çıkan kervanlar, (kervansarayların konumuna göre bu güzergah belirlenmiştir)Beyşehir, Konya ve Kayseri üzerinden Sivas‘a, oradan da Erzincan-Erzurum yoluyla Tebriz‘e ulaşmıştır. ');
 
-    // Ana şehirleri vurgulamak için renkli daireler ekle (Kayseri ve Erzincan hariç)
+    // Ana şehirleri vurgulamak için renkli daireler  (Kayseri ve Erzincan hariç)
     var mainRouteCities = [
       {pos: waypoints[0], name: 'Alanya', color: '#FF6B6B'},       // Alanya
       {pos: waypoints[1], name: 'Antalya', color: '#FF8E53'},      // Antalya
