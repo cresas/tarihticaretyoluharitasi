@@ -27,6 +27,7 @@
       cursor: pointer;
       transition: all 0.3s ease;
       min-width: 80px;
+	  font-size : 15px;
     }
 
     .city-label:hover {
@@ -165,6 +166,10 @@
       left: 0;
       z-index: 9999;
     }
+	
+	    .trade-route-legend {
+      display : none;
+    }
     }
   </style>
 </head>
@@ -197,18 +202,30 @@
 
 
   <script>
+    // Responsive minZoom ayarları
+    var isMobile = window.innerWidth < 768;
+    var responsiveMinZoom = isMobile ? 5.3 : 5.8;
+    var responsiveZoom = isMobile ? 5 : 6;
+    var responsiveSetViewZoom = isMobile ? 5 : 6;
+    
+    // Responsive maxBounds ayarları - Mobilde daha geniş alan
+    var responsiveMaxBounds = isMobile ? [
+      [28, 22],  // Sol-alt köşe (daha batıya genişletildi)
+      [56, 52]   // Sağ-üst köşe (daha doğuya genişletildi)
+    ] : [
+      [28, 25],  // Masaüstü için orijinal
+      [56, 48]
+    ];
+
     // Beyaz, minimal harita katmanı
     var map = L.map('map', {
-      minZoom: 5.8,
+      minZoom: responsiveMinZoom,
       maxZoom: 10,
-      zoom: window.innerWidth < 768 ? 5 : 6,
+      zoom: responsiveZoom,
       zoomSnap: 0.25,
       worldCopyJump: false,
-     maxBounds: [
-        [28, 25],
-        [56, 48]
-      ]
-    }).setView([38.5, 35.2], window.innerWidth < 768 ? 4	 : 6);
+     maxBounds: responsiveMaxBounds
+    }).setView([38.5, 35.2], responsiveSetViewZoom);
 
     // Beyaz, şehir isimsiz minimal harita katmanı gönderilen ref'e uygun
     L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
@@ -310,7 +327,7 @@
     cities.forEach(function(city) {
       var cityIcon = L.divIcon({
         className: 'city-label',
-        html: '<div class="city-image" style="background-image: url(\'' + city.image + '\')"></div>' +
+        html: '<div class="city-image" style="background-image: url(\'' + city.image + '\')" style></div>' +
               '<div>' + city.name + '</div>',
         iconSize: [90, 70],
         iconAnchor: [45, 35]
@@ -398,7 +415,7 @@
       {start: 8, end: 9, curve: -0.5, points: 25}  // Erzurum → Tebriz
     ];
 
-    // Kıvrımlı yol noktaları
+    // Kıvrımlı yol noktalarını oluştur
     var curvedRoutePoints = createAdvancedCurvedRoute(waypoints, curvedSegments);
     
     // Kıvrımlı yolu çiz
@@ -411,9 +428,9 @@
     }).addTo(map);
 
     // Yola tıklanabilirlik ekle
-    curvedRoute.bindPopup('<strong> Kervan Yolu</strong><br>XIII-XIV. yüzyıllarda Antalya Limanından yola çıkan kervanlar, (kervansarayların konumuna göre bu güzergah belirlenmiştir)Beyşehir, Konya ve Kayseri üzerinden Sivas‘a, oradan da Erzincan-Erzurum yoluyla Tebriz‘e ulaşmıştır. ');
+    curvedRoute.bindPopup('<strong> Kervan Yolu</strong><br>XIII-XIV. yüzyıllarda Antalya Limanından yola çıkan kervanlar, (kervansarayların konumuna göre bu güzergah belirlenmiştir)Beyşehir, Konya ve Kayseri üzerinden Sivas\'a, oradan da Erzincan-Erzurum yoluyla Tebriz\'e ulaşmıştır. ');
 
-    // Ana şehirleri vurgulamak için renkli daireler  (Kayseri ve Erzincan hariç)
+    // Ana şehirleri vurgulamak için renkli daireler ekle (Kayseri ve Erzincan hariç)
     var mainRouteCities = [
       {pos: waypoints[0], name: 'Alanya', color: '#FF6B6B'},       // Alanya
       {pos: waypoints[1], name: 'Antalya', color: '#FF8E53'},      // Antalya
@@ -434,6 +451,26 @@
 
     // Harita kontrolleri özelleştirme
     map.attributionControl.setPrefix(' Tebriz\'e uzanan kervan yolu - Dijital Çizim');
+    
+    // Pencere boyutu değiştiğinde haritayı yeniden ayarla
+    window.addEventListener('resize', function() {
+      var newIsMobile = window.innerWidth < 768;
+      var newMinZoom = newIsMobile ? 5.3 : 5.8;
+      var newMaxBounds = newIsMobile ? [
+        [28, 22],  // Mobil için genişletilmiş sınırlar
+        [56, 52]
+      ] : [
+        [28, 25],  // Masaüstü için orijinal sınırlar
+        [56, 48]
+      ];
+      
+      if (isMobile !== newIsMobile) {
+        map.setMinZoom(newMinZoom);
+        map.setMaxBounds(newMaxBounds);
+        isMobile = newIsMobile;
+        console.log('🔄 Ekran boyutu değişti, minZoom ve maxBounds güncellendi:', newMinZoom);
+      }
+    });
   </script>
 </body>
 </html>
