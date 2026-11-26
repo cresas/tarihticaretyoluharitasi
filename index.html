@@ -8,6 +8,7 @@
 
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/topojson-client@3/dist/topojson-client.min.js"></script>
   <style>
     body {
       margin: 0;
@@ -19,6 +20,7 @@
     #map {
       height: 100vh;
       width: 100%;
+      background: #dce6ee; /* Deniz ve göl arka plan rengi */
     }
 
     .city-label {
@@ -27,7 +29,7 @@
       cursor: pointer;
       transition: all 0.3s ease;
       min-width: 80px;
-	  font-size : 15px;
+      font-size: 15px;
     }
 
     .city-label:hover {
@@ -106,7 +108,7 @@
       border-radius: 2px;
     }
 	
-	   .bottom-bar {
+    .bottom-bar {
       width: 100%;
       height: 1.2rem;
       background-color: #ffffff;
@@ -125,16 +127,7 @@
     /* Mobil responsive */
     @media (max-width: 768px) {
       .trade-route-legend {
-        top: 10px;
-        right: 10px;
-        left: 10px;
-        right: 10px;
-        font-size: 12px;
-        padding: 10px;
-      }
-      
-      .legend-title {
-        font-size: 14px;
+        display: none;
       }
       
       .city-label {
@@ -157,19 +150,15 @@
         font-size: 16px;
       }
 	  
-	     .bottom-bar {
-      width: 100%;
-      height: 2rem;
-      background-color: #ffffff;
-      position: absolute;
-      bottom: 0;
-      left: 0;
-      z-index: 9999;
-    }
-	
-	    .trade-route-legend {
-      display : none;
-    }
+      .bottom-bar {
+        width: 100%;
+        height: 2rem;
+        background-color: #ffffff;
+        position: absolute;
+        bottom: 0;
+        left: 0;
+        z-index: 9999;
+      }
     }
   </style>
 </head>
@@ -178,28 +167,13 @@
   
   <div class="trade-route-legend">
     <div class="legend-title">🛤️ Ticaret Yolları</div>
-	<!--
-    <div class="legend-item">
-      <div class="legend-line silk-road"></div>
-      <span>İpek Yolu Ana Hat</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-line local-trade"></div>
-      <span>Bölgesel Ticaret</span>
-    </div>
-    <div class="legend-item">
-      <div class="legend-line sea-route"></div>
-      <span>Deniz Ticareti</span>
-    </div>
-	-->
     <div class="legend-item">
       <div class="legend-line curved-route"></div>
       <span>Kervan Yolu</span>
     </div>
   </div>
   
-    <div class="bottom-bar"></div>
-
+  <div class="bottom-bar"></div>
 
   <script>
     // Responsive minZoom ayarları
@@ -224,15 +198,29 @@
       zoom: responsiveZoom,
       zoomSnap: 0.25,
       worldCopyJump: false,
-     maxBounds: responsiveMaxBounds
+      maxBounds: responsiveMaxBounds
     }).setView([38.5, 35.2], responsiveSetViewZoom);
 
-    // Beyaz, şehir isimsiz minimal harita katmanı gönderilen ref'e uygun
-    L.tileLayer('https://{s}.basemaps.cartocdn.com/light_nolabels/{z}/{x}/{y}{r}.png', {
-      attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
-      subdomains: 'abcd',
-      maxZoom: 20
-    }).addTo(map);
+    // API anahtarı gerektirmeyen ve arka planda ülke/şehir ismi basmayan vektör sınır katmanı
+    fetch('https://cdn.jsdelivr.net/npm/world-atlas@2/countries-50m.json')
+      .then(function(response) {
+        return response.json();
+      })
+      .then(function(worldData) {
+        var countries = topojson.feature(worldData, worldData.objects.countries);
+        L.geoJSON(countries, {
+          interactive: false,
+          style: {
+            fillColor: '#f5f4f0', // Kara rengi
+            fillOpacity: 1,
+            color: '#b8bec4',     // Ülke ve kıyı sınır çizgisi rengi
+            weight: 1
+          }
+        }).addTo(map);
+      })
+      .catch(function(error) {
+        console.error('Harita sınır verisi yüklenemedi:', error);
+      });
 
     // Şehirler verisi - YENİ GÜZERGAH DAHİL
     var cities = [
@@ -264,7 +252,6 @@
         description: 'Alanya limanından çıkan kervanlar, önce batıya Antalya yönüne kıvrılıp sonra Konya üzerinden doğuya doğru Tebriz\'e uzanan kıvrımlı yolda ticaret yapmışlardır.',
         image: 'Antalya.jpg'
       },
-
       {
         name: 'Ayıntap (Antep)',
         lat: 37.0662,
@@ -327,7 +314,7 @@
     cities.forEach(function(city) {
       var cityIcon = L.divIcon({
         className: 'city-label',
-        html: '<div class="city-image" style="background-image: url(\'' + city.image + '\')" style></div>' +
+        html: '<div class="city-image" style="background-image: url(\'' + city.image + '\')"></div>' +
               '<div>' + city.name + '</div>',
         iconSize: [90, 70],
         iconAnchor: [45, 35]
@@ -345,12 +332,7 @@
       });
     });
 
-    // Mevcut ticaret yolları kaldırıldı
-    // (Sivas-Antep, Konya-Antep, Erzurum-Musul çizgileri kaldırıldı)
-
     // KIVIRIMLI ALANYA-TEBRİZ TİCARET YOLU
-    // Güzergah: Alanya → (sola kıvrılarak Antalya'ya doğru) → Konya → Kayseri → Erzincan → Erzurum → Tebriz
-    
     function createAdvancedCurvedRoute(waypoints, segments) {
       var allPoints = [];
       
@@ -363,15 +345,11 @@
         
         for (var i = 0; i <= numPoints; i++) {
           var t = i / numPoints;
-          
-          // Temel interpolasyon
           var lat = start[0] + (end[0] - start[0]) * t;
           var lng = start[1] + (end[1] - start[1]) * t;
           
-          // Eğri ekleme
           if (curve !== 0) {
             var perpendicular = Math.sin(t * Math.PI) * curve;
-            // Dikey offset hesaplama
             var dx = end[1] - start[1];
             var dy = end[0] - start[0];
             var length = Math.sqrt(dx * dx + dy * dy);
@@ -404,13 +382,13 @@
 
     // Segment tanımları (yeni eğrili yol için)
     var curvedSegments = [
-      {start: 0, end: 1, curve: 0.2, points: 20}, // Alanya → Antalya
-      {start: 1, end: 2, curve: -0.1, points: 25},  // Antalya → Isparta-Beydişehir yönü
+      {start: 0, end: 1, curve: 0.2, points: 20},  // Alanya → Antalya
+      {start: 1, end: 2, curve: -0.1, points: 25}, // Antalya → Isparta-Beydişehir yönü
       {start: 2, end: 3, curve: -0.4, points: 0},  // Isparta-Beydişehir → Konya (sağa dönüş)
       {start: 3, end: 4, curve: 0.1, points: 15},  // Konya → Aksaray
-      {start: 4, end: 5, curve: -0.1, points: 15},  // Aksaray → Kayseri
+      {start: 4, end: 5, curve: -0.1, points: 15}, // Aksaray → Kayseri
       {start: 5, end: 6, curve: 0.4, points: 15},  // Kayseri → Sivas
-      {start: 6, end: 7, curve: -0.2, points: 15},  // Sivas → Erzincan
+      {start: 6, end: 7, curve: -0.2, points: 15}, // Sivas → Erzincan
       {start: 7, end: 8, curve: 0.1, points: 15},  // Erzincan → Erzurum
       {start: 8, end: 9, curve: -0.5, points: 25}  // Erzurum → Tebriz
     ];
@@ -429,25 +407,6 @@
 
     // Yola tıklanabilirlik ekle
     curvedRoute.bindPopup('<strong> Kervan Yolu</strong><br>XIII-XIV. yüzyıllarda Antalya Limanından yola çıkan kervanlar, (kervansarayların konumuna göre bu güzergah belirlenmiştir)Beyşehir, Konya ve Kayseri üzerinden Sivas\'a, oradan da Erzincan-Erzurum yoluyla Tebriz\'e ulaşmıştır. ');
-
-    // Ana şehirleri vurgulamak için renkli daireler ekle (Kayseri ve Erzincan hariç)
-    var mainRouteCities = [
-      {pos: waypoints[0], name: 'Alanya', color: '#FF6B6B'},       // Alanya
-      {pos: waypoints[1], name: 'Antalya', color: '#FF8E53'},      // Antalya
-      {pos: waypoints[3], name: 'Konya', color: '#4ECDC4'},        // Konya
-      {pos: waypoints[6], name: 'Sivas', color: '#45B7D1'},        // Sivas
-      {pos: waypoints[8], name: 'Erzurum', color: '#96CEB4'},      // Erzurum
-      {pos: waypoints[9], name: 'Tebriz', color: '#FFEAA7'}        // Tebriz
-    ];
-
-    mainRouteCities.forEach(function(city) {
-      L.circle(city.pos, {
-        color: city.color,
-        fillColor: city.color,
-        fillOpacity: 0.4,
-        radius: 12000
-      });//.addTo(map).bindTooltip(city.name + ' (Kıvrımlı Hat)', {permanent: false, direction: 'top'});
-    });
 
     // Harita kontrolleri özelleştirme
     map.attributionControl.setPrefix(' Tebriz\'e uzanan kervan yolu - Dijital Çizim');
